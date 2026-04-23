@@ -40,7 +40,7 @@ def parse_duration_seconds(duration_str: str) -> int:
         raise ValueError(f"Unexpected duration format: {duration_str}")
     return int(float(duration_str[:-1]))
 
-def fetch_commute_time(direction: str) -> dict:
+def fetch_commute_time(direction: str) -> list[dict]:
     if not API_KEY:
         raise RuntimeError("GOOGLE_MAPS_API_KEY is not set in .env")
     if not HOME_ADDRESS or not WORK_ADDRESS:
@@ -66,6 +66,7 @@ def fetch_commute_time(direction: str) -> dict:
         "routingPreference": "TRAFFIC_AWARE_OPTIMAL",
         "trafficModel": "BEST_GUESS",
         "departureTime": departure_time_utc,
+        "computeAlternativeRoutes": True,
         "languageCode": "en-US",
         "units": "METRIC",
     }
@@ -73,7 +74,7 @@ def fetch_commute_time(direction: str) -> dict:
     headers = {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": API_KEY,
-        "X-Goog-FieldMask": "routes.duration,routes.staticDuration,routes.distanceMeters",
+        "X-Goog-FieldMask": "routes.duration,routes.staticDuration,routes.distanceMeters,routes.description",
     }
 
     resp = requests.post(ROUTES_URL, json=body, headers=headers, timeout=10)
@@ -82,34 +83,36 @@ def fetch_commute_time(direction: str) -> dict:
         resp.raise_for_status()
     data = resp.json()
 
-    try:
-        route = data["routes"][0]
-    except (KeyError, IndexError) as e:
-        raise RuntimeError(f"Unexpected Routes API response: {data}") from e
-
-    if "duration" not in route:
-        raise RuntimeError(f"Routes API response missing 'duration': {route}")
-
-    duration_traffic_sec = parse_duration_seconds(route["duration"])
-    static_duration_sec = parse_duration_seconds(
-        route.get("staticDuration", route["duration"])
-    )
-    distance_m = route["distanceMeters"]
+    if not data.get("routes"):
+        raise RuntimeError(f"Unexpected Routes API response: {data}")
 
     now_local = datetime.now()
+    rows = []
 
-    return {
-        "timestamp": now_local.isoformat(timespec="seconds"),
-        "weekday": now_local.strftime("%A"),
-        "direction": direction,
-        "origin_input": origin,
-        "destination_input": destination,
-        "distance_m": distance_m,
-        "duration_sec": static_duration_sec,
-        "duration_text": f"{round(static_duration_sec / 60)} min (no traffic)",
-        "duration_in_traffic_sec": duration_traffic_sec,
-        "duration_in_traffic_text": f"{round(duration_traffic_sec / 60)} min (with traffic)",
-    }
+    for i, route in enumerate(data["routes"]):
+        if "duration" not in route:
+            raise RuntimeError(f"Routes API response missing 'duration': {route}")
+
+        duration_traffic_min = round(parse_duration_seconds(route["duration"]) / 60)
+        duration_min = round(
+            parse_duration_seconds(route.get("staticDuration", route["duration"])) / 60
+        )
+        distance_mi = round(route["distanceMeters"] / 1609.344, 1)
+        route_label = route.get("description") or f"route_{i + 1}"
+
+        rows.append({
+            "timestamp": now_local.isoformat(timespec="minutes"),
+            "weekday": now_local.strftime("%A"),
+            "direction": direction,
+            "origin_input": origin,
+            "destination_input": destination,
+            "route_label": route_label,
+            "distance_mi": distance_mi,
+            "duration_min": duration_min,
+            "duration_in_traffic_min": duration_traffic_min,
+        })
+
+    return rows
 
 def append_to_csv(row: dict):
     new_file = not CSV_PATH.exists()
@@ -165,14 +168,15 @@ def main():
         )
         sys.exit(0)
 
-    row = fetch_commute_time(direction)
-    append_to_csv(row)
+    rows = fetch_commute_time(direction)
     label = "→ work" if direction == "to_work" else "→ home"
-    print(
-        f"[{row['timestamp']}] {row['weekday']} {label}: "
-        f"{row['duration_in_traffic_text']} "
-        f"(baseline {row['duration_text']}, distance {row['distance_m']} m)"
-    )
+    for row in rows:
+        append_to_csv(row)
+        print(
+            f"[{row['timestamp']}] {row['weekday']} {label} via {row['route_label']}: "
+            f"{row['duration_in_traffic_min']} min with traffic "
+            f"(baseline {row['duration_min']} min, {row['distance_mi']} mi)"
+        )
 
 if __name__ == "__main__":
     main()
