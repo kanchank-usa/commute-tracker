@@ -1,0 +1,2 @@
+timestamp,weekday,origin_input,destination_input,distance_m,duration_sec,duration_text,duration_in_traffic_sec,duration_in_traffic_text
+2026-04-23T14:21:07,Thursday,"144 W Heritage Dr, Mountain House, CA 95391","840 W California Ave, Sunnyvale, CA 94086",86466,3680,61 min (no traffic),3674,61 min (with traffic)
