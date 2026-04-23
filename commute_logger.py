@@ -2,7 +2,7 @@ import argparse
 import csv
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import requests
@@ -51,8 +51,12 @@ def fetch_commute_time(direction: str) -> dict:
         else (WORK_ADDRESS, HOME_ADDRESS)
     )
 
+    # Set departure 2 minutes ahead — the Routes API rejects timestamps in the
+    # past (clock skew between client and server). Traffic data is still live.
     departure_time_utc = (
-        datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+        (datetime.now(timezone.utc) + timedelta(minutes=2))
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
     )
 
     body = {
