@@ -1,5 +1,3 @@
-timestamp,weekday,direction,origin_input,destination_input,route_label,distance_mi,duration_min,duration_in_traffic_min
-2026-04-23T15:28,Thursday,to_home,"840 W California Ave, Sunnyvale, CA 94086","144 W Heritage Dr, Mountain House, CA 95391",I-680 N and I-580 E,53.9,63,135
-2026-04-23T15:28,Thursday,to_home,"840 W California Ave, Sunnyvale, CA 94086","144 W Heritage Dr, Mountain House, CA 95391",I-580 E,64.6,81,150
-2026-04-23T15:33,Thursday,to_home,"840 W California Ave, Sunnyvale, CA 94086","144 W Heritage Dr, Mountain House, CA 95391",I-680 N and I-580 E,53.7,62,133
-2026-04-23T15:33,Thursday,to_home,"840 W California Ave, Sunnyvale, CA 94086","144 W Heritage Dr, Mountain House, CA 95391",I-580 E,68.8,80,156
+timestamp,weekday,origin_input,destination_input,distance_m,duration_sec,duration_text,duration_in_traffic_sec,duration_in_traffic_text
+2026-04-23T14:21:07,Thursday,"144 W Heritage Dr, Mountain House, CA 95391","840 W California Ave, Sunnyvale, CA 94086",86466,3680,61 min (no traffic),3674,61 min (with traffic)
+2026-04-23T15:18:50,Thursday,to_home,"840 W California Ave, Sunnyvale, CA 94086","144 W Heritage Dr, Mountain House, CA 95391",88236,3982,66 min (no traffic),7994,133 min (with traffic)
