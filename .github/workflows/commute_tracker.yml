@@ -2,12 +2,10 @@ name: Commute Tracker
 
 on:
   schedule:
-    # Morning window: 6–10 AM Pacific (covers both PST=UTC-8 and PDT=UTC-7)
-    - cron: '*/10 13-17 * * 2-4'
-    # Evening window pt1: 3–7 PM Pacific, before midnight UTC (Tue–Thu)
-    - cron: '*/10 22-23 * * 2-4'
-    # Evening window pt2: 3–7 PM Pacific, after midnight UTC (Wed–Fri)
-    - cron: '*/10 0-2 * * 3-5'
+    # Morning: 6:00 AM PDT (13:00 UTC) Tue–Thu — triggers 4-hr loop
+    - cron: '0 13 * * 2-4'
+    # Evening: 3:00 PM PDT (22:00 UTC) Tue–Thu — triggers 4-hr loop
+    - cron: '0 22 * * 2-4'
   workflow_dispatch: # Allow manual runs for testing
 
 concurrency:
@@ -38,8 +36,13 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run commute logger
-        run: python commute_logger.py
+      - name: Run commute logger loop
+        run: |
+          # TEST: 7 iterations (~1 hr). After test, restore to 24 for 4-hr window.
+          for i in $(seq 1 7); do
+            python commute_logger.py
+            [ $i -lt 7 ] && sleep 600
+          done
 
       - name: Commit CSV if updated
         run: |
